@@ -1,0 +1,106 @@
+import math
+from typing import List, Tuple
+
+
+def first_fit(items: List[float], capacity: float = 1.0) -> List[List[float]]:
+    """
+    Packs items into bins using the First Fit (FF) strategy.
+    Places each item into the first bin that has enough space.
+    """
+    bins_remaining: List[float] = []
+    bin_contents: List[List[float]] = []
+
+    for item in items:
+        placed = False
+        for i, space in enumerate(bins_remaining):
+            if space >= item:
+                bins_remaining[i] -= item
+                bin_contents[i].append(item)
+                placed = True
+                break
+
+        if not placed:
+            bins_remaining.append(capacity - item)
+            bin_contents.append([item])
+
+    return bin_contents
+
+
+def first_fit_decreasing(items: List[float], capacity: float = 1.0) -> List[List[float]]:
+    """
+    Packs items into bins using First Fit Decreasing (FFD) strategy.
+    Sorts items in descending order before applying First Fit.
+    """
+    return first_fit(sorted(items, reverse=True), capacity)
+
+
+def best_fit_decreasing(items: List[float], capacity: float = 1.0) -> List[List[float]]:
+    """
+    Packs items into bins using Best Fit Decreasing (BFD) strategy.
+    Places each item into the bin that leaves the least remaining space.
+    """
+    sorted_items = sorted(items, reverse=True)
+    bins_remaining: List[float] = []
+    bin_contents: List[List[float]] = []
+
+    for item in sorted_items:
+        best_idx = -1
+        best_space = float('inf')
+
+        for i, space in enumerate(bins_remaining):
+            if space >= item and (space - item) < best_space:
+                best_space = space - item
+                best_idx = i
+
+        if best_idx >= 0:
+            bins_remaining[best_idx] -= item
+            bin_contents[best_idx].append(item)
+        else:
+            bins_remaining.append(capacity - item)
+            bin_contents.append([item])
+
+    return bin_contents
+
+
+def display_bins(label: str, bins: List[List[float]]) -> None:
+    """
+    Displays a visual text representation of bin usage and contents.
+    """
+    print(f"\n{label}: {len(bins)} bins")
+    for i, bin_items in enumerate(bins, 1):
+        used = sum(bin_items)
+        bar = "#" * int(used * 20)
+        formatted_items = [round(x, 1) for x in bin_items]
+        print(f"  Bin {i}: {formatted_items} | Used: {used:.1f} [{bar:<20}]")
+
+
+def main() -> None:
+    items = [0.5, 0.7, 0.3, 0.9, 0.2, 0.6, 0.8, 0.4, 0.1, 0.5]
+    capacity = 1.0
+
+    # Theoretical lower bound on total bins needed
+    lower_bound = math.ceil(sum(items) / capacity)
+
+    print(f"Items: {items}")
+    print(f"Capacity: {capacity}")
+    print(f"Sum of items: {sum(items):.1f}")
+    print(f"Lower bound on bins: {lower_bound}")
+
+    # Solve using different strategies
+    ff_bins = first_fit(items, capacity)
+    ffd_bins = first_fit_decreasing(items, capacity)
+    bfd_bins = best_fit_decreasing(items, capacity)
+
+    # Display results
+    display_bins("First Fit (FF)", ff_bins)
+    display_bins("First Fit Decreasing (FFD)", ffd_bins)
+    display_bins("Best Fit Decreasing (BFD)", bfd_bins)
+
+    print(
+        f"\nSummary: Lower Bound={lower_bound}, "
+        f"FF={len(ff_bins)}, FFD={len(ffd_bins)}, BFD={len(bfd_bins)}"
+    )
+
+
+if __name__ == "__main__":
+    main()
