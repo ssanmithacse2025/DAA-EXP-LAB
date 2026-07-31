@@ -1,0 +1,94 @@
+from dataclasses import dataclass
+from typing import List, Tuple
+
+@dataclass
+class MatrixChainResult:
+    min_cost: int
+    optimal_parens: str
+    cost_matrix: List[List[int]]
+    split_matrix: List[List[int]]
+
+
+def matrix_chain_order(dims: List[int]) -> MatrixChainResult:
+    """
+    Computes optimal matrix multiplication ordering using Dynamic Programming (0-indexed).
+    dims: list of dimensions where matrix i has dimensions dims[i] x dims[i+1]
+    Time Complexity: O(n^3), Space Complexity: O(n^2)
+    """
+    n = len(dims) - 1  # Number of matrices
+    
+    # m[i][j]: Minimum multiplication cost for matrices A[i] through A[j]
+    m = [[0] * n for _ in range(n)]
+    # s[i][j]: Optimal split index k for matrices A[i] through A[j]
+    s = [[0] * n for _ in range(n)]
+
+    # chain_len is the length of the matrix sub-chain being evaluated
+    for chain_len in range(2, n + 1):
+        for i in range(n - chain_len + 1):
+            j = i + chain_len - 1
+            m[i][j] = float('inf')
+            
+            for k in range(i, j):
+                # Cost = cost(left chain) + cost(right chain) + cost of multiplying results
+                cost = m[i][k] + m[k + 1][j] + (dims[i] * dims[k + 1] * dims[j + 1])
+                
+                if cost < m[i][j]:
+                    m[i][j] = cost
+                    s[i][j] = k
+
+    parens_str = build_optimal_parens(s, 0, n - 1)
+    return MatrixChainResult(
+        min_cost=m[0][n - 1],
+        optimal_parens=parens_str,
+        cost_matrix=m,
+        split_matrix=s
+    )
+
+
+def build_optimal_parens(s: List[List[int]], i: int, j: int) -> str:
+    """Recursively constructs parenthesized expression string using 0-based indices."""
+    if i == j:
+        return f"A{i + 1}"
+    k = s[i][j]
+    left = build_optimal_parens(s, i, k)
+    right = build_optimal_parens(s, k + 1, j)
+    return f"({left} × {right})"
+
+
+def display_dp_table(cost_matrix: List[List[int]]) -> None:
+    """Prints formatted DP Cost Table m[i][j]."""
+    n = len(cost_matrix)
+    print("\nDP Cost Matrix m[i][j]:")
+    
+    # Header row
+    header = f"{'':>6}" + "".join(f"{f'A{j+1}':>10}" for j in range(n))
+    print(header)
+    print("-" * len(header))
+
+    # Data rows
+    for i in range(n):
+        row_str = f"A{i+1:<5}|"
+        for j in range(n):
+            if j < i:
+                row_str += f"{'—':>10}"
+            else:
+                row_str += f"{cost_matrix[i][j]:>10}"
+        print(row_str)
+
+
+# --- Execution Example ---
+if __name__ == "__main__":
+    # Matrices: A1(10x30), A2(30x5), A3(5x60), A4(60x10)
+    dims = [10, 30, 5, 60, 10]
+    n = len(dims) - 1
+
+    print("Matrix Dimensions:")
+    for i in range(n):
+        print(f"  A{i+1}: {dims[i]} × {dims[i+1]}")
+
+    result = matrix_chain_order(dims)
+
+    print(f"\nMinimum Scalar Multiplications: {result.min_cost}")
+    print(f"Optimal Parenthesization: {result.optimal_parens}")
+    
+    display_dp_table(result.cost_matrix)
