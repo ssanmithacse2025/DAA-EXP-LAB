@@ -1,0 +1,120 @@
+import random
+import sys
+import time
+from typing import Callable, Dict, List, Tuple
+
+# Extend recursion depth for worst-case inputs (e.g., deterministic on sorted arrays)
+sys.setrecursionlimit(20000)
+
+
+def partition(arr: List[int], low: int, high: int) -> Tuple[int, int]:
+    """
+    Partitions the array around the pivot element (last element).
+    
+    Returns:
+        A tuple containing (pivot_index, comparison_count).
+    """
+    pivot = arr[high]
+    i = low - 1
+    comps = 0
+
+    for j in range(low, high):
+        comps += 1
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1, comps
+
+
+def deterministic_quicksort(arr: List[int], low: int, high: int) -> int:
+    """
+    Standard QuickSort selecting the last element as the pivot.
+    """
+    comps = 0
+    if low < high:
+        pi, partition_comps = partition(arr, low, high)
+        comps += partition_comps
+        comps += deterministic_quicksort(arr, low, pi - 1)
+        comps += deterministic_quicksort(arr, pi + 1, high)
+    return comps
+
+
+def randomized_quicksort(arr: List[int], low: int, high: int) -> int:
+    """
+    Randomized QuickSort selecting a random pivot to avoid worst-case performance.
+    """
+    comps = 0
+    if low < high:
+        # Choose random pivot and swap with high
+        rand_idx = random.randint(low, high)
+        arr[rand_idx], arr[high] = arr[high], arr[rand_idx]
+
+        pi, partition_comps = partition(arr, low, high)
+        comps += partition_comps
+        comps += randomized_quicksort(arr, low, pi - 1)
+        comps += randomized_quicksort(arr, pi + 1, high)
+    return comps
+
+
+def run_test(
+    sort_fn: Callable[[List[int], int, int], int], arr: List[int]
+) -> Tuple[int, float]:
+    """
+    Measures execution time and comparison count for a given sorting function.
+    """
+    a = arr[:]
+    start = time.perf_counter()
+    comps = sort_fn(a, 0, len(a) - 1)
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
+    return comps, elapsed_ms
+
+
+def generate_test_cases(n: int) -> Dict[str, List[int]]:
+    """
+    Generates test inputs for evaluating sorting algorithms.
+    """
+    test_cases = {
+        "Random": [random.randint(1, 100000) for _ in range(n)],
+        "Sorted": list(range(n)),
+        "Reverse": list(range(n, 0, -1)),
+        "Nearly Sorted": list(range(n)),
+    }
+
+    # Introduce minor random swaps for 'Nearly Sorted'
+    ns = test_cases["Nearly Sorted"]
+    for _ in range(n // 20):
+        i, j = random.randint(0, n - 1), random.randint(0, n - 1)
+        ns[i], ns[j] = ns[j], ns[i]
+
+    return test_cases
+
+
+def main() -> None:
+    n = 5000
+    test_cases = generate_test_cases(n)
+
+    header_input = "Input Type"
+    header_d_comps = "DQS Comps"
+    header_d_time = "DQS Time(ms)"
+    header_r_comps = "RQS Comps"
+    header_r_time = "RQS Time(ms)"
+
+    print(
+        f"{header_input:<16} {header_d_comps:>12} {header_d_time:>14} "
+        f"{header_r_comps:>12} {header_r_time:>14}"
+    )
+    print("-" * 72)
+
+    for case, arr in test_cases.items():
+        d_comps, d_time = run_test(deterministic_quicksort, arr)
+        r_comps, r_time = run_test(randomized_quicksort, arr)
+        print(
+            f"{case:<16} {d_comps:>12} {d_time:>14.2f} "
+            f"{r_comps:>12} {r_time:>14.2f}"
+        )
+
+
+if __name__ == "__main__":
+    main()
