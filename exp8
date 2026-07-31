@@ -1,0 +1,106 @@
+from itertools import permutations
+from typing import List, Tuple
+
+INF = float('inf')
+
+
+def reduce_matrix(mat: List[List[float]]) -> Tuple[List[List[float]], float]:
+    """
+    Reduces the matrix rows and columns, returning the modified matrix 
+    and the total reduction cost.
+    
+    Args:
+        mat: Cost matrix where INF represents non-existent edges.
+        
+    Returns:
+        A tuple containing:
+            - reduced_mat: The row- and column-reduced matrix.
+            - reduction_cost: Sum of all min row and min column values subtracted.
+    """
+    n = len(mat)
+    m = [row[:] for row in mat]  # Deep copy rows
+    cost = 0.0
+
+    # Row reduction
+    for i in range(n):
+        row_min = min(m[i])
+        if row_min and row_min != INF:
+            cost += row_min
+            m[i] = [x - row_min if x != INF else INF for x in m[i]]
+
+    # Column reduction
+    for j in range(n):
+        col_min = min(m[i][j] for i in range(n))
+        if col_min and col_min != INF:
+            cost += col_min
+            for i in range(n):
+                if m[i][j] != INF:
+                    m[i][j] -= col_min
+
+    return m, cost
+
+
+def tsp_brute_force(cost_matrix: List[List[float]], n: int) -> Tuple[List[int], float]:
+    """
+    Solves TSP via brute force permutation search for path verification.
+    
+    Args:
+        cost_matrix: Square matrix with edge costs.
+        n: Number of cities.
+        
+    Returns:
+        A tuple containing:
+            - best_path: List of city indices starting and ending at city 0.
+            - best_cost: The minimum total path cost.
+    """
+    cities = list(range(1, n))
+    best_cost = INF
+    best_path: List[int] = []
+
+    for perm in permutations(cities):
+        path = [0] + list(perm) + [0]
+        c = sum(cost_matrix[path[i]][path[i + 1]] for i in range(n))
+        if c < best_cost:
+            best_cost = c
+            best_path = path
+
+    return best_path, best_cost
+
+
+def display_cost_matrix(cost_matrix: List[List[float]], city_names: List[str]) -> None:
+    """Prints a nicely formatted TSP cost matrix."""
+    print("5-City TSP - Cost Matrix:")
+    print(f"{'':>4}", " ".join(f"{c:>5}" for c in city_names))
+    
+    for i, row in enumerate(cost_matrix):
+        formatted_row = ["INF" if x == INF else str(int(x)) for x in row]
+        print(f"{city_names[i]:>4}", " ".join(f"{v:>5}" for v in formatted_row))
+
+
+def main() -> None:
+    # 5-city cost matrix
+    cost_matrix = [
+        [INF, 10, 8, 9, 7],
+        [10, INF, 10, 5, 6],
+        [8, 10, INF, 8, 9],
+        [9, 5, 8, INF, 6],
+        [7, 6, 9, 6, INF],
+    ]
+    n = 5
+    cities = ["A", "B", "C", "D", "E"]
+
+    best_path, best_cost = tsp_brute_force(cost_matrix, n)
+
+    display_cost_matrix(cost_matrix, cities)
+
+    print(f"\nOptimal Tour: {' -> '.join(cities[i] for i in best_path)}")
+    print(f"Minimum Cost: {best_cost}")
+    
+    print("\nPath verification:")
+    for i in range(n):
+        u, v = best_path[i], best_path[i + 1]
+        print(f"  {cities[u]} -> {cities[v]}: cost = {cost_matrix[u][v]}")
+
+
+if __name__ == "__main__":
+    main()
